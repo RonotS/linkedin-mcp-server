@@ -776,6 +776,47 @@ class ConnectionActions:
         await self._dismiss_dialog()
         return note_limit_message
 
+    async def get_connection_state(self, username: str) -> dict[str, Any]:
+        """Report the relationship with a profile WITHOUT changing it.
+
+        Kinetic Scaling fork addition (2026-11-02). The outreach bot needs to
+        know whether an invitation it sent was accepted. ``connect_with_person``
+        reads the same state, but it is a write: on a profile whose invitation
+        was withdrawn or ignored it would send a NEW one. This reads the main
+        profile and the top-card action signals exactly as that flow does and
+        stops there. The only click is opening the More menu on a follow-only
+        reading, because a Pending control can sit under it (upstream #1424);
+        opening a menu changes nothing, and Escape closes it.
+
+        Returns ``{url, state, profile}`` where ``state`` is one of
+        already_connected, pending, incoming_request, connectable,
+        follow_only, self_profile or unavailable, and ``profile`` is the
+        main profile text (absent when the page could not be read).
+        """
+        username = normalize_person_identifier(username)
+        url = person_profile_url(username, "/")
+
+        profile = await self._read_main_profile(username)
+        page_text = profile.get("sections", {}).get("main_profile", "")
+        if not page_text:
+            return {"url": url, "state": "unavailable"}
+
+        signals = await self._read_action_signals(username)
+        state = connection.detect_connection_state(signals)
+        if state == "follow_only":
+            opened = await self._open_more_menu()
+            if opened:
+                signals = await self._read_action_signals(username)
+                try:
+                    await self._press_escape()
+                except OffLinkedInLandingError:
+                    raise
+                except Exception:
+                    logger.debug("Escape after More-menu reread failed", exc_info=True)
+                state = connection.detect_connection_state(signals)
+        logger.info("Connection state for %s: %s", username, state)
+        return {"url": url, "state": state, "profile": page_text}
+
     async def connect_with_person(
         self,
         username: str,

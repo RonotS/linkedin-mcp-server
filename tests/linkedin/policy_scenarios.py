@@ -1265,6 +1265,7 @@ TOOL_FACADE_METHODS = {
     "extract_feed",
     "extract_page",
     "get_company_employees",
+    "get_connection_state",
     "get_conversation",
     "get_easy_apply_form",
     "get_inbox",

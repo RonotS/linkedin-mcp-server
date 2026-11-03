@@ -133,6 +133,10 @@ class LinkedInExtractor:
         """Send a LinkedIn connection request or accept an incoming one."""
         return await self._connection.connect_with_person(username, note=note)
 
+    async def get_connection_state(self, username: str) -> dict[str, Any]:
+        """Read the relationship with a profile without changing it (fork addition)."""
+        return await self._connection.get_connection_state(username)
+
     async def get_sidebar_profiles(self, username: str) -> dict[str, Any]:
         """Extract profile links from sidebar sections on a profile page."""
         return await self._person.get_sidebar_profiles(username)

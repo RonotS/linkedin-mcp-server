@@ -281,6 +281,39 @@
     "_meta": {
       "fastmcp": {
         "tags": [
+          "person"
+        ]
+      }
+    },
+    "annotations": {
+      "openWorldHint": true,
+      "readOnlyHint": true
+    },
+    "description": "Read whether you are connected to a person, without changing anything.\n\nUnlike connect_with_person this never sends, accepts or withdraws an\ninvitation, so it is safe to call on someone you already invited.",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "linkedin_username": {
+          "description": "LinkedIn username (e.g., \"stickerdaniel\"). A full profile URL is accepted too and is reduced to the username.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "linkedin_username"
+      ],
+      "type": "object"
+    },
+    "name": "get_connection_state",
+    "outputSchema": {
+      "additionalProperties": true,
+      "type": "object"
+    },
+    "title": "Get Connection State"
+  },
+  {
+    "_meta": {
+      "fastmcp": {
+        "tags": [
           "messaging"
         ]
       }

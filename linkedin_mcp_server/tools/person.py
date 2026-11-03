@@ -216,6 +216,44 @@ def register_person_tools(
 
     @mcp.tool(
         timeout=tool_timeout,
+        title="Get Connection State",
+        annotations={"readOnlyHint": True, "openWorldHint": True},
+        tags={"person"},
+    )
+    @tool_errors
+    async def get_connection_state(
+        linkedin_username: str,
+        ctx: Context,
+    ) -> dict[str, Any]:
+        """
+        Read whether you are connected to a person, without changing anything.
+
+        Unlike connect_with_person this never sends, accepts or withdraws an
+        invitation, so it is safe to call on someone you already invited.
+
+        Args:
+            linkedin_username: LinkedIn username (e.g., "stickerdaniel"). A full profile URL is accepted too and is reduced to the username.
+            ctx: FastMCP context for progress reporting
+
+        Returns:
+            Dict with url, state and profile (the main profile text).
+            States: already_connected (1st-degree), pending (your invitation
+            is still outstanding), incoming_request, connectable (no
+            invitation outstanding: never sent, withdrawn or ignored),
+            follow_only, self_profile, or unavailable.
+        """
+        linkedin_username = normalize_person_identifier(linkedin_username)
+        extractor = await get_ready_extractor(ctx, tool_name="get_connection_state")
+        logger.info("Reading connection state: %s", linkedin_username)
+        await ctx.report_progress(
+            progress=0, total=100, message="Reading connection state"
+        )
+        result = await extractor.get_connection_state(linkedin_username)
+        await ctx.report_progress(progress=100, total=100, message="Complete")
+        return result
+
+    @mcp.tool(
+        timeout=tool_timeout,
         title="Connect With Person",
         annotations={"destructiveHint": True, "openWorldHint": True},
         tags={"person", "actions"},
