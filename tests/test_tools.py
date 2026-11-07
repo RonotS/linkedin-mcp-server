@@ -794,6 +794,7 @@ class TestPersonTool:
             "103644278",
             network=None,
             current_company=None,
+            page=1,
         )
 
     async def test_search_people_with_network_and_company_filters(
@@ -830,6 +831,7 @@ class TestPersonTool:
             None,
             network=["F"],
             current_company="1115",
+            page=1,
         )
 
     @pytest.mark.parametrize(
@@ -892,7 +894,42 @@ class TestPersonTool:
             None,
             network=["F"],
             current_company=None,
+            page=1,
         )
+
+    async def test_search_people_reads_a_later_page(self, monkeypatch):
+        """page goes through pydantic validation and reaches the extractor."""
+        import linkedin_mcp_server.tools.person as person_module
+        from linkedin_mcp_server.tools.person import register_person_tools
+
+        mock_extractor = _make_mock_extractor(
+            {
+                "url": "https://www.linkedin.com/search/results/people/?keywords=engineer&page=2",
+                "sections": {"search_results": "Jane Doe"},
+            }
+        )
+
+        async def _fake_get_ready_extractor(ctx, tool_name):
+            return mock_extractor
+
+        monkeypatch.setattr(
+            person_module, "get_ready_extractor", _fake_get_ready_extractor
+        )
+
+        mcp = FastMCP("test")
+        register_person_tools(mcp)
+
+        await mcp.call_tool("search_people", {"keywords": "engineer", "page": 2})
+        mock_extractor.search_people.assert_awaited_once_with(
+            "engineer",
+            None,
+            network=None,
+            current_company=None,
+            page=2,
+        )
+
+        with pytest.raises(ToolError):
+            await mcp.call_tool("search_people", {"keywords": "engineer", "page": 0})
 
     async def test_search_people_validation_error_surfaced_as_tool_error(
         self, mock_context, serve_extractor

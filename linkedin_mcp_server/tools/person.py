@@ -140,6 +140,7 @@ def register_person_tools(
         location: str | None = None,
         network: StrList | None = None,
         current_company: str | None = None,
+        page: Annotated[int, Field(ge=1, le=100)] = 1,
     ) -> dict[str, Any]:
         """
         Search for people on LinkedIn.
@@ -166,6 +167,8 @@ def register_person_tools(
                 exposed under references["about"]. For company-wide employee
                 demographics (location/education/function breakdown) plus a
                 slug-based lookup, use get_company_employees instead.
+            page: Results page to read (1-100, default 1). Each call reads one
+                page of about 10 people; ask for page 2, 3, ... to go deeper.
 
         Returns:
             Dict with url, sections (name -> raw text), and optional references.
@@ -180,17 +183,19 @@ def register_person_tools(
                 location=location,
                 network=network,
                 current_company=current_company,
+                page=page,
             )
         except FilterValidationError as e:
             raise CodedToolError(str(e), ErrorCode.INVALID_ARGUMENT) from e
 
         extractor = await get_ready_extractor(ctx, tool_name="search_people")
         logger.info(
-            "Searching people: keywords='%s', location='%s', network=%s, current_company='%s'",
+            "Searching people: keywords='%s', location='%s', network=%s, current_company='%s', page=%d",
             keywords,
             location,
             network,
             current_company,
+            page,
         )
 
         await ctx.report_progress(
@@ -203,6 +208,7 @@ def register_person_tools(
                 location,
                 network=network,
                 current_company=current_company,
+                page=page,
             )
         except FilterValidationError as e:
             # Validation messages carry actionable detail; surface

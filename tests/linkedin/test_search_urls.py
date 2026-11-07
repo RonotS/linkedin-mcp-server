@@ -562,6 +562,21 @@ class TestBuildPeopleSearchUrl:
         with pytest.raises(FilterValidationError, match="Invalid network token"):
             build_people_search_url("engineer", network=["X"], current_company="SAP")
 
+    def test_first_page_adds_nothing(self):
+        assert build_people_search_url("engineer", page=1) == (
+            f"{PEOPLE}keywords=engineer"
+        )
+
+    def test_later_page_goes_last(self):
+        assert build_people_search_url(
+            "engineer", network=["S"], page=3
+        ) == f"{PEOPLE}keywords=engineer&network=%5B%22S%22%5D&page=3"
+
+    @pytest.mark.parametrize("page", [0, -1, 101, True, 2.5, "2"])
+    def test_out_of_range_page_is_refused(self, page):
+        with pytest.raises(FilterValidationError, match="page must be"):
+            build_people_search_url("engineer", page=page)
+
 
 class TestBuildCompanySearchUrl:
     def test_keywords_only(self):

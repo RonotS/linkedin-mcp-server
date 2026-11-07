@@ -136,8 +136,12 @@ def build_people_search_url(
     location: str | None = None,
     network: list[str] | None = None,
     current_company: str | None = None,
+    page: int = 1,
 ) -> str:
     """Build a LinkedIn people search URL, refusing filters LinkedIn ignores.
+
+    ``page`` is the results page (1-100). Page 1 is LinkedIn's default and adds
+    nothing to the URL, so a first-page search reads exactly as before.
 
     Every refusal happens before a URL exists, so a workflow calling this can
     never navigate on a filter LinkedIn would swallow. An unknown ``network``
@@ -175,6 +179,11 @@ def build_people_search_url(
             f'URN via get_company_profile -> references["about"].'
         )
 
+    if isinstance(page, bool) or not isinstance(page, int) or not 1 <= page <= 100:
+        raise FilterValidationError(
+            f"page must be a whole number from 1 to 100; got {page!r}"
+        )
+
     params = f"keywords={quote_plus(keywords)}"
     if location:
         params += f"&geoUrn={_encode_list_facet([location])}"
@@ -182,6 +191,8 @@ def build_people_search_url(
         params += f"&network={_encode_list_facet(network)}"
     if current_company:
         params += f"&currentCompany={_encode_list_facet([current_company])}"
+    if page > 1:
+        params += f"&page={page}"
 
     return f"https://www.linkedin.com/search/results/people/?{params}"
 
